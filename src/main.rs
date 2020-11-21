@@ -118,7 +118,7 @@ fn main() {
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count() - 1;
+                    count += data.iter().count();
                     for (p,v) in data.into_iter() {
                         wtr.serialize(&HL2 { p: u2f(p), v: v })?;
                     }
@@ -150,7 +150,7 @@ fn main() {
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count() - 1;
+                    count += data.iter().count();
                     for (o,h,l,c) in data.into_iter() {
                         wtr.serialize(&OHLC { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c) })?;
                     }
@@ -182,7 +182,7 @@ fn main() {
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count() - 1;
+                    count += data.iter().count();
                     for (o,h,l,c,v) in data.into_iter() {
                         wtr.serialize(&OHLCV { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c), v: v })?;
                     }
@@ -215,7 +215,7 @@ fn main() {
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = data.iter().rev().next().unwrap().clone();
-                    count += data.iter().count() - 1;
+                    count += data.iter().count();
                     for row in data.into_iter() {
                         wtr.serialize(&row)?;
                     }
