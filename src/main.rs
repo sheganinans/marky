@@ -54,7 +54,11 @@ impl Serialize for F {
     }
 }
 
+fn f2o (f: f64) -> F { F(ordered_float::OrderedFloat(f)) }
+fn o2f(f: F) -> f64 { f.0.0 }
+
 fn main() {
+
     let matches = clap_app!(marky =>
         (version: "0.0.2")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
@@ -88,8 +92,6 @@ fn main() {
 
     fn go(input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, header: bool, order: usize, mode: Mode) -> Result<(), Box<dyn Error>> {
         let f = fs::read_to_string(input)?;
-        let f2u = |f: f64| F(ordered_float::OrderedFloat(f));
-        let u2f = |F(ordered_float::OrderedFloat(f))| f;
         let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
         let order = if order == 0usize { 1usize } else { order };
 
@@ -99,7 +101,7 @@ fn main() {
                 let mut acc = vec![];
                 for result in rdr.deserialize() {
                     let row: HL2 = result?;
-                    acc.push((f2u(row.p), row.v))
+                    acc.push((f2o(row.p), row.v))
                 }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
@@ -120,7 +122,7 @@ fn main() {
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count();
                     for (p,v) in data.into_iter() {
-                        wtr.serialize(&HL2 { p: u2f(p), v: v })?;
+                        wtr.serialize(&HL2 { p: o2f(p), v: v })?;
                     }
                 }
                 wtr.flush()?;
@@ -131,7 +133,7 @@ fn main() {
                 let mut acc = vec![];
                 for result in rdr.deserialize() {
                     let row: OHLC = result?;
-                    acc.push((f2u(row.o), f2u(row.h), f2u(row.l), f2u(row.c)))
+                    acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c)))
                 }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
@@ -152,7 +154,7 @@ fn main() {
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count();
                     for (o,h,l,c) in data.into_iter() {
-                        wtr.serialize(&OHLC { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c) })?;
+                        wtr.serialize(&OHLC { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c) })?;
                     }
                 }
                 wtr.flush()?;
@@ -163,7 +165,7 @@ fn main() {
                 let mut acc = vec![];
                 for result in rdr.deserialize() {
                     let row: OHLCV = result?;
-                    acc.push((f2u(row.o), f2u(row.h), f2u(row.l), f2u(row.c), row.v))
+                    acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c), row.v))
                 }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
@@ -184,7 +186,7 @@ fn main() {
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count();
                     for (o,h,l,c,v) in data.into_iter() {
-                        wtr.serialize(&OHLCV { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c), v: v })?;
+                        wtr.serialize(&OHLCV { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c), v: v })?;
                     }
                 }
                 wtr.flush()?;
@@ -195,7 +197,7 @@ fn main() {
                 let mut acc = vec![];
                 for result in rdr.deserialize() {
                     let row: Vec<f64> = result?;
-                    let row = row.into_iter().map(f2u).collect::<Vec<_>>();
+                    let row = row.into_iter().map(f2o).collect::<Vec<_>>();
                     acc.push(row);
                 }
                 println!("Training MCMC");
