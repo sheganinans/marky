@@ -29,7 +29,7 @@ impl<'de> Deserialize<'de> for F {
     }
 }
 
-fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
+fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     ( input: &str
     , desired_len: usize
     , output: &str
@@ -37,13 +37,15 @@ fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     , chunk_delta: f64
     , num_files: u64
     , header: bool
-    , order: usize) -> Result<(), Box<dyn Error>> {
+    , order: usize
+    ) -> Result<(), Box<dyn Error>> {
+
     println!("reading history");
     let mut acc = vec![];
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
     let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
-    for result in rdr.deserialize() { let row: T = result?; acc.push(row) }
+    for result in rdr.deserialize() { let row: Row = result?; acc.push(row) }
     println!("training MCMC");
     let mut chain = Chain::of_order(order);
     let history_len = acc.iter().count();
@@ -57,7 +59,9 @@ fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
         let mut wtr =
             csv::WriterBuilder::new()
                 .has_headers(false)
-                .from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
+                .from_path(match i {
+                Some(i) => format!("{}.{}", i, output),
+                _ => output.to_string() })?;
         let mut count = 0usize;
         let mut last_elem = chain.generate().iter().next().unwrap().clone();
         while count < desired_len {
@@ -95,9 +99,9 @@ fn main() {
     ).get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
-    let desired_len : usize = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap();
+    let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap();
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
-    let chunking : usize = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
+    let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
     let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
     let num_files : u64 = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
     let header = matches.is_present("HEADER");
@@ -113,26 +117,26 @@ fn main() {
 
     let go = |mode: Mode| {
         (match mode {
-            Mode::HL2 => gen::<HL2>,
-            Mode::OHLC => gen::<OHLC>,
+            Mode::HL2   => gen::<HL2>,
+            Mode::OHLC  => gen::<OHLC>,
             Mode::OHLCV => gen::<OHLCV>,
-            Mode::F64 => gen::<Vec<F>>,
-            Mode::I64 => gen::<Vec<i64>>,
-            Mode::U64 => gen::<Vec<u64>>,
+            Mode::F64   => gen::<Vec<F>>,
+            Mode::I64   => gen::<Vec<i64>>,
+            Mode::U64   => gen::<Vec<u64>>,
         })(input, desired_len, output, chunking, chunk_delta, num_files, header, order)
     };
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, f64_mode, i64_mode, u64_mode) {
         (false, false, false, false, false, false) => go(Mode::F64),
-        (true, false, false, false, false, false) => go(Mode::HL2),
-        (false, true, false, false, false, false) => go(Mode::OHLC),
-        (false, false, true, false, false, false) => go(Mode::OHLCV),
-        (false, false, false, true, false, false) => go(Mode::F64),
-        (false, false, false, false, true, false) => go(Mode::I64),
-        (false, false, false, false, false, true) => go(Mode::U64),
+        ( true, false, false, false, false, false) => go(Mode::HL2),
+        (false,  true, false, false, false, false) => go(Mode::OHLC),
+        (false, false,  true, false, false, false) => go(Mode::OHLCV),
+        (false, false, false,  true, false, false) => go(Mode::F64),
+        (false, false, false, false,  true, false) => go(Mode::I64),
+        (false, false, false, false, false,  true) => go(Mode::U64),
         _ => Ok(())
     };
     match ret {
-        Ok(_) => println!("Done!"),
+        Ok(_) => println!("done!"),
         Err(e) => println!("{}",e)
     }
 }
