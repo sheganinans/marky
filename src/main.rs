@@ -114,8 +114,7 @@ fn main() {
                 println!("Generating File");
                 let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
                 let mut count = 0usize;
-                let g = chain.generate();
-                let mut last_elem = *g.iter().next().unwrap();
+                let mut last_elem = *chain.generate().iter().next().unwrap();
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
@@ -147,8 +146,7 @@ fn main() {
                 println!("Generating File");
                 let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
                 let mut count = 0usize;
-                let g = chain.generate();
-                let mut last_elem = *g.iter().next().unwrap();
+                let mut last_elem = *chain.generate().iter().next().unwrap();
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
@@ -180,8 +178,7 @@ fn main() {
                 println!("Generating File");
                 let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
                 let mut count = 0usize;
-                let g = chain.generate();
-                let mut last_elem = *g.iter().next().unwrap();
+                let mut last_elem = *chain.generate().iter().next().unwrap();
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
@@ -214,8 +211,7 @@ fn main() {
                 println!("Generating File");
                 let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
                 let mut count = 0usize;
-                let g = chain.generate();
-                let mut last_elem = g.iter().next().unwrap().clone();
+                let mut last_elem = chain.generate().iter().next().unwrap().clone();
                 while count < desired_len {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = data.iter().rev().next().unwrap().clone();
