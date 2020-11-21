@@ -9,8 +9,8 @@ cargo build --release
 
 ```
 .\target\release\marky.exe --help
-marky 0.0.1
-Aistis Raulinaitis. <sheganinans@gmail.com>
+marky 0.0.2
+Aistis Raulinaitis. <sheganians@gmail.com>
 MCMC CSV Learner
 
 USAGE:
@@ -28,6 +28,7 @@ FLAGS:
 
 OPTIONS:
     -c, --chunking <CHUNKING>    Chunking Factor
+    -t, --delta <CHUNK_DELTA>    Chunking Delta (default φ)
     -o, --output <OUTPUT>        Output Destination
 
 ARGS:

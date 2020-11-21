@@ -56,13 +56,14 @@ impl Serialize for F {
 
 fn main() {
     let matches = clap_app!(marky =>
-        (version: "0.0.1")
-        (author: "Aistis Raulinaitis. <sheganians@sheganinans.com>")
+        (version: "0.0.2")
+        (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
         (about: "MCMC CSV Learner")
         (@arg DESIRED_LEN: +required "Desired Length of History")
         (@arg INPUT: +required "Input File")
         (@arg OUTPUT: -o --output +takes_value "Output Destination")
         (@arg CHUNKING: -c --chunking +takes_value "Chunking Factor")
+        (@arg CHUNK_DELTA: -t --delta +takes_value "Chunking Delta (default φ)")
         (@arg HEADER: --header "Has Header (default false)")
         (@arg ORDER: -d ... "Increase Order of MCMC")
         (@arg HL2: --hl2 "HL2 Mode")
@@ -74,7 +75,8 @@ fn main() {
     let input = matches.value_of("INPUT").unwrap();
     let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap_or(100usize);
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
-    let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap_or(10usize);
+    let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
+    let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
     let header = matches.is_present("HEADER");
     let order = matches.occurrences_of("ORDER") as usize;
     let hl2_mode = matches.is_present("HL2");
@@ -84,13 +86,12 @@ fn main() {
 
     enum Mode { HL2, OHLC, OHLCV, Floats }
 
-    fn go(input: &str, desired_len: usize, output: &str, chunking: usize, header: bool, order: usize, mode: Mode) -> Result<(), Box<dyn Error>> {
+    fn go(input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, header: bool, order: usize, mode: Mode) -> Result<(), Box<dyn Error>> {
         let f = fs::read_to_string(input)?;
         let f2u = |f: f64| F(ordered_float::OrderedFloat(f));
         let u2f = |F(ordered_float::OrderedFloat(f))| f;
         let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
         let order = if order == 0usize { 1usize } else { order };
-        let PHI = 1.618033988749894848204586834;
 
         match mode {
             Mode::HL2 => {
@@ -105,7 +106,7 @@ fn main() {
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
                 while chunk_size < history_len {
-                    chunk_size = (chunk_size as f64 * PHI) as usize;
+                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
                     for d in acc[..].chunks(chunk_size as usize) {
                         chain.feed(d);
                     }
@@ -138,7 +139,7 @@ fn main() {
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
                 while chunk_size < history_len {
-                    chunk_size = (chunk_size as f64 * PHI) as usize;
+                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
                     for d in acc[..].chunks(chunk_size as usize) {
                         chain.feed(d);
                     }
@@ -171,7 +172,7 @@ fn main() {
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
                 while chunk_size < history_len as usize {
-                    chunk_size = (chunk_size as f64 * PHI) as usize;
+                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
                     for d in acc[..].chunks(chunk_size as usize) {
                         chain.feed(d);
                     }
@@ -205,7 +206,7 @@ fn main() {
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
                 while chunk_size < history_len as usize {
-                    chunk_size = (chunk_size as f64 * PHI) as usize;
+                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
                     for d in acc[..].chunks(chunk_size as usize) {
                         chain.feed(d);
                     }
@@ -228,7 +229,7 @@ fn main() {
             }
         }
     }
-    let go = |mode: Mode| go(input, desired_len, output, chunking, header, order, mode);
+    let go = |mode: Mode| go(input, desired_len, output, chunking, chunk_delta, header, order, mode);
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, floats_mode) {
         (false, false, false, false) => go(Mode::Floats),
         (true, false, false, false) => go(Mode::HL2),
