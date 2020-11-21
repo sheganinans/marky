@@ -9,57 +9,30 @@ use serde::{Deserialize, Serialize, Serializer};
 use rayon::prelude::*;
 
 #[derive(Debug, Deserialize, Serialize)]
-struct HL2 {
-    p: f64,
-    v: u64,
-}
+struct HL2 { p: f64, v: u64 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct OHLC {
-    o: f64,
-    h: f64,
-    l: f64,
-    c: f64,
-}
+struct OHLC { o: f64, h: f64, l: f64, c: f64 }
+
 #[derive(Debug, Deserialize, Serialize)]
-struct OHLCV {
-    o: f64,
-    h: f64,
-    l: f64,
-    c: f64,
-    v: u64,
-}
+struct OHLCV { o: f64, h: f64, l: f64, c: f64, v: u64 }
+
 #[derive(Debug, Clone, Copy)]
 struct F(ordered_float::OrderedFloat<f64>);
 
-impl Hash for F {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
+impl Hash for F { fn hash<H: Hasher>(&self, state: &mut H) { self.0.hash(state) } }
 
-impl PartialEq for F {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
+impl PartialEq for F { fn eq(&self, other: &Self) -> bool { self.0 == other.0 } }
 
 impl Eq for F {}
 
-impl Serialize for F {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_f64(*self.0)
-    }
-}
+impl Serialize for F { fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer { serializer.serialize_f64(*self.0) } }
 
 fn f2o (f: f64) -> F { F(ordered_float::OrderedFloat(f)) }
+
 fn o2f(f: F) -> f64 { f.0.0 }
 
 fn main() {
-
     let matches = clap_app!(marky =>
         (version: "0.0.3")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
@@ -102,20 +75,12 @@ fn main() {
             Mode::HL2 => {
                 println!("Reading History");
                 let mut acc = vec![];
-                for result in rdr.deserialize() {
-                    let row: HL2 = result?;
-                    acc.push((f2o(row.p), row.v))
-                }
+                for result in rdr.deserialize() { let row: HL2 = result?; acc.push((f2o(row.p), row.v)) }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
-                while chunk_size < history_len {
-                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-                    for d in acc[..].chunks(chunk_size as usize) {
-                        chain.feed(d);
-                    }
-                }
+                while chunk_size < history_len { chunk_size = (chunk_size as f64 * chunk_delta) as usize; for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); } }
                 println!("Generating Files");
                 let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
                     let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
@@ -125,9 +90,7 @@ fn main() {
                         let data = chain.generate_from_token(last_elem);
                         last_elem = *data.iter().rev().next().unwrap();
                         count += data.iter().count();
-                        for (p,v) in data.into_iter() {
-                            wtr.serialize(&HL2 { p: o2f(p), v: v })?;
-                        }
+                        for (p,v) in data.into_iter() { wtr.serialize(&HL2 { p: o2f(p), v })? }
                     }
                     wtr.flush()?;
                     Ok(())
@@ -138,20 +101,12 @@ fn main() {
             Mode::OHLC => {
                 println!("Reading History");
                 let mut acc = vec![];
-                for result in rdr.deserialize() {
-                    let row: OHLC = result?;
-                    acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c)))
-                }
+                for result in rdr.deserialize() { let row: OHLC = result?; acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c))) }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
-                while chunk_size < history_len {
-                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-                    for d in acc[..].chunks(chunk_size as usize) {
-                        chain.feed(d);
-                    }
-                }
+                while chunk_size < history_len { chunk_size = (chunk_size as f64 * chunk_delta) as usize; for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); } }
                 println!("Generating Files");
                 let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
                     let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
@@ -161,9 +116,7 @@ fn main() {
                         let data = chain.generate_from_token(last_elem);
                         last_elem = *data.iter().rev().next().unwrap();
                         count += data.iter().count();
-                        for (o,h,l,c) in data.into_iter() {
-                            wtr.serialize(&OHLC { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c) })?;
-                        }
+                        for (o,h,l,c) in data.into_iter() { wtr.serialize(&OHLC { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c) })? }
                     }
                     wtr.flush()?;
                     Ok(())
@@ -174,20 +127,12 @@ fn main() {
             Mode::OHLCV => {
                 println!("Reading History");
                 let mut acc = vec![];
-                for result in rdr.deserialize() {
-                    let row: OHLCV = result?;
-                    acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c), row.v))
-                }
+                for result in rdr.deserialize() { let row: OHLCV = result?; acc.push((f2o(row.o), f2o(row.h), f2o(row.l), f2o(row.c), row.v)) }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
-                while chunk_size < history_len as usize {
-                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-                    for d in acc[..].chunks(chunk_size as usize) {
-                        chain.feed(d);
-                    }
-                }
+                while chunk_size < history_len as usize { chunk_size = (chunk_size as f64 * chunk_delta) as usize; for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); } }
                 println!("Generating Files");
                 let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
                     let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
@@ -197,9 +142,7 @@ fn main() {
                         let data = chain.generate_from_token(last_elem);
                         last_elem = *data.iter().rev().next().unwrap();
                         count += data.iter().count();
-                        for (o,h,l,c,v) in data.into_iter() {
-                            wtr.serialize(&OHLCV { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c), v: v })?;
-                        }
+                        for (o,h,l,c,v) in data.into_iter() { wtr.serialize(&OHLCV { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c), v })? }
                     }
                     wtr.flush()?;
                     Ok(())
@@ -210,21 +153,12 @@ fn main() {
             Mode::Floats => {
                 println!("Reading History");
                 let mut acc = vec![];
-                for result in rdr.deserialize() {
-                    let row: Vec<f64> = result?;
-                    let row = row.into_iter().map(f2o).collect::<Vec<_>>();
-                    acc.push(row);
-                }
+                for result in rdr.deserialize() { let row: Vec<f64> = result?; acc.push(row.into_iter().map(f2o).collect::<Vec<_>>()) }
                 println!("Training MCMC");
                 let mut chain = Chain::of_order(order);
                 let history_len = acc.iter().count();
                 let mut chunk_size = history_len / chunking;
-                while chunk_size < history_len as usize {
-                    chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-                    for d in acc[..].chunks(chunk_size as usize) {
-                        chain.feed(d);
-                    }
-                }
+                while chunk_size < history_len as usize { chunk_size = (chunk_size as f64 * chunk_delta) as usize; for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); } }
                 println!("Generating Files");
                 let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
                     let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
@@ -234,9 +168,7 @@ fn main() {
                         let data = chain.generate_from_token(last_elem);
                         last_elem = data.iter().rev().next().unwrap().clone();
                         count += data.iter().count();
-                        for row in data.into_iter() {
-                            wtr.serialize(&row)?;
-                        }
+                        for row in data.into_iter() { wtr.serialize(&row)? }
                     }
                     wtr.flush()?;
                     Ok(())
