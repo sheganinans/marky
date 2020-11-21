@@ -120,7 +120,7 @@ fn main() {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count() - 1;
-                    for (p,v) in data.into_iter().skip(1) {
+                    for (p,v) in data.into_iter() {
                         wtr.serialize(&HL2 { p: u2f(p), v: v })?;
                     }
                 }
@@ -153,7 +153,7 @@ fn main() {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count() - 1;
-                    for (o,h,l,c) in data.into_iter().skip(1) {
+                    for (o,h,l,c) in data.into_iter() {
                         wtr.serialize(&OHLC { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c) })?;
                     }
                 }
@@ -186,7 +186,7 @@ fn main() {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = *data.iter().rev().next().unwrap();
                     count += data.iter().count() - 1;
-                    for (o,h,l,c,v) in data.into_iter().skip(1) {
+                    for (o,h,l,c,v) in data.into_iter() {
                         wtr.serialize(&OHLCV { o: u2f(o), h: u2f(h), l: u2f(l), c: u2f(c), v: v })?;
                     }
                 }
@@ -220,7 +220,7 @@ fn main() {
                     let data = chain.generate_from_token(last_elem);
                     last_elem = data.iter().rev().next().unwrap().clone();
                     count += data.iter().count() - 1;
-                    for row in data.into_iter().skip(1) {
+                    for row in data.into_iter() {
                         wtr.serialize(&row)?;
                     }
                 }
