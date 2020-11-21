@@ -31,13 +31,13 @@ impl<'de> Deserialize<'de> for F {
 
 fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     (input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, num_files: u64, header: bool, order: usize) -> Result<(), Box<dyn Error>> {
-    println!("Reading History");
+    println!("reading history");
     let mut acc = vec![];
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
     let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
     for result in rdr.deserialize() { let row: T = result?; acc.push(row) }
-    println!("Training MCMC");
+    println!("training MCMC");
     let mut chain = Chain::of_order(order);
     let history_len = acc.iter().count();
     let mut chunk_size = history_len / chunking;
@@ -45,7 +45,7 @@ fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
         chunk_size = (chunk_size as f64 * chunk_delta) as usize;
         for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); }
     }
-    println!("Generating Files");
+    println!("generating files");
     let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
         let mut wtr =
             csv::WriterBuilder::new()
@@ -62,7 +62,7 @@ fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
         wtr.flush()?;
         Ok(())
     };
-    (1..num_files+1).into_par_iter().for_each(|i| { gen(if num_files > 1 {Some(i)} else {None}).unwrap() });
+    (1..num_files+1).into_par_iter().for_each(|i| { gen(if num_files > 1 { Some(i) } else { None }).unwrap() });
     Ok(())
 }
 
