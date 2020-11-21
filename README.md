@@ -45,6 +45,6 @@ ARGS:
       HL2 mode expects exactly 2 columns : f64, u64
      OHLC mode expects exactly 4 columns : f64, f64, f64, f64
     OHLCV mode expects exactly 5 columns : f64, f64, f64, f64, u64
+```
 
 Otherwise `--f64`, `--i64`, and `--u64` expect a homogeneous matrix of that type of any row length
-```
