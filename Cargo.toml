@@ -1,0 +1,14 @@
+[package]
+name = "marky"
+version = "0.1.0"
+authors = ["Aistis Raulinaitis <a.raulinaitis@protonmail.ch>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+markov = "1.1.0"
+serde = { version = "1", features = ["derive"] }
+csv = "1.1"
+clap = "2.33.3"
+ordered-float = "2.0.0"
