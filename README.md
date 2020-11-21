@@ -45,6 +45,6 @@ HL2 mode expects exactly 2 columns: `f64` and `u64`
 
 OHLC mode expects exactly 4 `f64` columns
 
-OHLC mode expectex exactly 5 columns: 4 `f64` and 1 `u64`
+OHLCV mode expectex exactly 5 columns: 4 `f64` and 1 `u64`
 
 Otherwise `--f64`, `--i64`, and `--u64` expect a homogeneous matrix of that type
