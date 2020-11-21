@@ -3,8 +3,8 @@
 ## [Preview of output generated from BTCUSD](https://sheganinans.github.io/marky/)
 
 ```sh
-rustup run nightly cargo build --release
-./target/release/marky 500000 .\BTC.csv -c 1000
+cargo build --release
+./target/release/marky 500000 BTC.csv -c 1000
 ```
 
 ```
