@@ -62,7 +62,7 @@ fn main() {
         (@arg DESIRED_LEN: +required "Desired Length of History")
         (@arg INPUT: +required "Input File")
         (@arg OUTPUT: -o --output +takes_value "Output Destination")
-        (@arg CHUNKING: -c --chunking +takes_value "Chunking Factor")
+        (@arg CHUNKING: -c --chunking +takes_value "Chunking Factor (default 10)")
         (@arg CHUNK_DELTA: -t --delta +takes_value "Chunking Delta (default φ)")
         (@arg HEADER: --header "Has Header (default false)")
         (@arg ORDER: -d ... "Increase Order of MCMC")
@@ -73,7 +73,7 @@ fn main() {
     ).get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
-    let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap_or(100usize);
+    let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap();
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
     let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
     let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();

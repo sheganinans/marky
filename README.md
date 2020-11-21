@@ -27,7 +27,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --chunking <CHUNKING>    Chunking Factor
+    -c, --chunking <CHUNKING>    Chunking Factor (default 10)
     -t, --delta <CHUNK_DELTA>    Chunking Delta (default φ)
     -o, --output <OUTPUT>        Output Destination
 
