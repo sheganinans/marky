@@ -17,7 +17,7 @@ USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>
 
 FLAGS:
-        --f64        raw f64 mode (default true)
+        --f64        f64 mode (default true)
         --header     has header (default false)
         --hl2        HL2 mode
         --i64        i64 mode
@@ -31,10 +31,20 @@ FLAGS:
 OPTIONS:
     -c, --chunking <CHUNKING>    chunking factor (default 10)
     -t, --delta <CHUNK_DELTA>    chunking delta (default φ)
-    -n, --num <NUM_FILES>        generate n mumber of files named n.out.csv
+    -n, --num <NUM_FILES>        generate n mumber of files named `n.out.csv`
     -o, --output <OUTPUT>        output destination
 
 ARGS:
     <DESIRED_LEN>    desired length of history
     <INPUT>          input file
 ```
+
+## Details
+
+HL2 mode expects exactly 2 columns: `f64` and `u64`
+
+OHLC mode expects exactly 4 `f64` columns
+
+OHLC mode expectex exactly 5 columns: 4 `f64` and 1 `u64`
+
+Otherwise `--f64`, `--i64`, and `--u64` expect a homogeneous matrix of that type
