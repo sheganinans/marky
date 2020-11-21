@@ -8,8 +8,8 @@ cargo build --release
 ```
 
 ```
-.\target\release\marky.exe --help
-marky 0.0.3
+ .\target\release\marky.exe --help
+marky 0.0.4
 Aistis Raulinaitis. <sheganians@gmail.com>
 MCMC CSV Learner
 
@@ -17,22 +17,24 @@ USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>
 
 FLAGS:
-        --floats     Raw float Mode (default true)
-        --header     Has Header (default false)
-        --hl2        HL2 Mode
-        --ohlc       OHLC Mode
-        --ohlcv      OHLCV Mode
-    -d               Increase Order of MCMC
+        --f64        raw f64 mode (default true)
+        --header     has header (default false)
+        --hl2        HL2 mode
+        --i64        i64 mode
+        --ohlc       OHLC mode
+        --ohlcv      OHLCV mode
+    -d               increase order of MCMC
+        --u64        u64 mode
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --chunking <CHUNKING>    Chunking Factor (default 10)
-    -t, --delta <CHUNK_DELTA>    Chunking Delta (default φ)
-    -n, --num <NUM_FILES>        Generate n mumber of files named n.out.csv
-    -o, --output <OUTPUT>        Output Destination
+    -c, --chunking <CHUNKING>    chunking factor (default 10)
+    -t, --delta <CHUNK_DELTA>    chunking delta (default φ)
+    -n, --num <NUM_FILES>        generate n mumber of files named n.out.csv
+    -o, --output <OUTPUT>        output destination
 
 ARGS:
-    <DESIRED_LEN>    Desired Length of History
-    <INPUT>          Input File
+    <DESIRED_LEN>    desired length of history
+    <INPUT>          input file
 ```
