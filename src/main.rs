@@ -58,7 +58,7 @@ fn main() {
     let matches = clap_app!(marky =>
         (version: "0.0.1")
         (author: "Aistis Raulinaitis. <sheganians@sheganinans.com>")
-        (about: "MCMC Price and Volume Data")
+        (about: "MCMC CSV Learner")
         (@arg DESIRED_LEN: +required "Desired Length of History")
         (@arg INPUT: +required "Input File")
         (@arg OUTPUT: -o --output +takes_value "Output Destination")

@@ -11,7 +11,7 @@ rustup run nightly cargo build --release
 .\target\release\marky.exe --help
 marky 0.0.1
 Aistis Raulinaitis. <sheganinans@gmail.com>
-MCMC Price and Volume Data
+MCMC CSV Learner
 
 USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>
