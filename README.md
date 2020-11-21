@@ -42,7 +42,7 @@ ARGS:
 ## Details
 
 ```
-      HL2 mode expects exactly 2 columns : f64, u64
+      HL2 mode expects exactly 2 columns :                f64, u64
      OHLC mode expects exactly 4 columns : f64, f64, f64, f64
     OHLCV mode expects exactly 5 columns : f64, f64, f64, f64, u64
 ```
