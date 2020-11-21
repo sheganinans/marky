@@ -6,6 +6,7 @@ use std::hash::{Hash, Hasher};
 
 use markov::Chain;
 use serde::{Deserialize, Serialize, Serializer};
+use rayon::prelude::*;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct HL2 {
@@ -60,7 +61,7 @@ fn o2f(f: F) -> f64 { f.0.0 }
 fn main() {
 
     let matches = clap_app!(marky =>
-        (version: "0.0.2")
+        (version: "0.0.3")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
         (about: "MCMC CSV Learner")
         (@arg DESIRED_LEN: +required "Desired Length of History")
@@ -68,6 +69,7 @@ fn main() {
         (@arg OUTPUT: -o --output +takes_value "Output Destination")
         (@arg CHUNKING: -c --chunking +takes_value "Chunking Factor (default 10)")
         (@arg CHUNK_DELTA: -t --delta +takes_value "Chunking Delta (default φ)")
+        (@arg NUM_FILES: -n --num +takes_value "Generate n mumber of files named n.out.csv")
         (@arg HEADER: --header "Has Header (default false)")
         (@arg ORDER: -d ... "Increase Order of MCMC")
         (@arg HL2: --hl2 "HL2 Mode")
@@ -81,6 +83,7 @@ fn main() {
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
     let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
     let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
+    let num_files : u64 = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
     let header = matches.is_present("HEADER");
     let order = matches.occurrences_of("ORDER") as usize;
     let hl2_mode = matches.is_present("HL2");
@@ -90,7 +93,7 @@ fn main() {
 
     enum Mode { HL2, OHLC, OHLCV, Floats }
 
-    fn go(input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, header: bool, order: usize, mode: Mode) -> Result<(), Box<dyn Error>> {
+    fn go(input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, num_files: u64, header: bool, order: usize, mode: Mode) -> Result<(), Box<dyn Error>> {
         let f = fs::read_to_string(input)?;
         let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
         let order = if order == 0usize { 1usize } else { order };
@@ -113,19 +116,23 @@ fn main() {
                         chain.feed(d);
                     }
                 }
-                println!("Generating File");
-                let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
-                let mut count = 0usize;
-                let mut last_elem = *chain.generate().iter().next().unwrap();
-                while count < desired_len {
-                    let data = chain.generate_from_token(last_elem);
-                    last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count();
-                    for (p,v) in data.into_iter() {
-                        wtr.serialize(&HL2 { p: o2f(p), v: v })?;
+                println!("Generating Files");
+                let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
+                    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
+                    let mut count = 0usize;
+                    let mut last_elem = *chain.generate().iter().next().unwrap();
+                    while count < desired_len {
+                        let data = chain.generate_from_token(last_elem);
+                        last_elem = *data.iter().rev().next().unwrap();
+                        count += data.iter().count();
+                        for (p,v) in data.into_iter() {
+                            wtr.serialize(&HL2 { p: o2f(p), v: v })?;
+                        }
                     }
-                }
-                wtr.flush()?;
+                    wtr.flush()?;
+                    Ok(())
+                };
+                (1..num_files+1).into_par_iter().for_each(|i| {gen(if num_files > 1 {Some(i)} else {None}).unwrap()});
                 Ok(())
             }
             Mode::OHLC => {
@@ -145,19 +152,23 @@ fn main() {
                         chain.feed(d);
                     }
                 }
-                println!("Generating File");
-                let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
-                let mut count = 0usize;
-                let mut last_elem = *chain.generate().iter().next().unwrap();
-                while count < desired_len {
-                    let data = chain.generate_from_token(last_elem);
-                    last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count();
-                    for (o,h,l,c) in data.into_iter() {
-                        wtr.serialize(&OHLC { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c) })?;
+                println!("Generating Files");
+                let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
+                    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
+                    let mut count = 0usize;
+                    let mut last_elem = *chain.generate().iter().next().unwrap();
+                    while count < desired_len {
+                        let data = chain.generate_from_token(last_elem);
+                        last_elem = *data.iter().rev().next().unwrap();
+                        count += data.iter().count();
+                        for (o,h,l,c) in data.into_iter() {
+                            wtr.serialize(&OHLC { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c) })?;
+                        }
                     }
-                }
-                wtr.flush()?;
+                    wtr.flush()?;
+                    Ok(())
+                };
+                (1..num_files+1).into_par_iter().for_each(|i| {gen(if num_files > 1 {Some(i)} else {None}).unwrap()});
                 Ok(())
             }
             Mode::OHLCV => {
@@ -177,19 +188,23 @@ fn main() {
                         chain.feed(d);
                     }
                 }
-                println!("Generating File");
-                let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
-                let mut count = 0usize;
-                let mut last_elem = *chain.generate().iter().next().unwrap();
-                while count < desired_len {
-                    let data = chain.generate_from_token(last_elem);
-                    last_elem = *data.iter().rev().next().unwrap();
-                    count += data.iter().count();
-                    for (o,h,l,c,v) in data.into_iter() {
-                        wtr.serialize(&OHLCV { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c), v: v })?;
+                println!("Generating Files");
+                let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
+                    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
+                    let mut count = 0usize;
+                    let mut last_elem = *chain.generate().iter().next().unwrap();
+                    while count < desired_len {
+                        let data = chain.generate_from_token(last_elem);
+                        last_elem = *data.iter().rev().next().unwrap();
+                        count += data.iter().count();
+                        for (o,h,l,c,v) in data.into_iter() {
+                            wtr.serialize(&OHLCV { o: o2f(o), h: o2f(h), l: o2f(l), c: o2f(c), v: v })?;
+                        }
                     }
-                }
-                wtr.flush()?;
+                    wtr.flush()?;
+                    Ok(())
+                };
+                (1..num_files+1).into_par_iter().for_each(|i| {gen(if num_files > 1 {Some(i)} else {None}).unwrap()});
                 Ok(())
             }
             Mode::Floats => {
@@ -210,24 +225,28 @@ fn main() {
                         chain.feed(d);
                     }
                 }
-                println!("Generating File");
-                let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(output)?;
-                let mut count = 0usize;
-                let mut last_elem = chain.generate().iter().next().unwrap().clone();
-                while count < desired_len {
-                    let data = chain.generate_from_token(last_elem);
-                    last_elem = data.iter().rev().next().unwrap().clone();
-                    count += data.iter().count();
-                    for row in data.into_iter() {
-                        wtr.serialize(&row)?;
+                println!("Generating Files");
+                let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
+                    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_path(match i { Some(i) => format!("{}.{}", i, output), _ => output.to_string() })?;
+                    let mut count = 0usize;
+                    let mut last_elem = chain.generate().iter().next().unwrap().clone();
+                    while count < desired_len {
+                        let data = chain.generate_from_token(last_elem);
+                        last_elem = data.iter().rev().next().unwrap().clone();
+                        count += data.iter().count();
+                        for row in data.into_iter() {
+                            wtr.serialize(&row)?;
+                        }
                     }
-                }
-                wtr.flush()?;
+                    wtr.flush()?;
+                    Ok(())
+                };
+                (1..num_files+1).into_par_iter().for_each(|i| {gen(if num_files > 1 {Some(i)} else {None}).unwrap()});
                 Ok(())
             }
         }
     }
-    let go = |mode: Mode| go(input, desired_len, output, chunking, chunk_delta, header, order, mode);
+    let go = |mode: Mode| go(input, desired_len, output, chunking, chunk_delta, num_files, header, order, mode);
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, floats_mode) {
         (false, false, false, false) => go(Mode::Floats),
         (true, false, false, false) => go(Mode::HL2),

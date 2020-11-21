@@ -9,7 +9,7 @@ cargo build --release
 
 ```
 .\target\release\marky.exe --help
-marky 0.0.2
+marky 0.0.3
 Aistis Raulinaitis. <sheganians@gmail.com>
 MCMC CSV Learner
 
@@ -29,6 +29,7 @@ FLAGS:
 OPTIONS:
     -c, --chunking <CHUNKING>    Chunking Factor (default 10)
     -t, --delta <CHUNK_DELTA>    Chunking Delta (default φ)
+    -n, --num <NUM_FILES>        Generate n mumber of files named n.out.csv
     -o, --output <OUTPUT>        Output Destination
 
 ARGS:
