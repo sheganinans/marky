@@ -133,7 +133,7 @@ fn main() {
         (false, false, false,  true, false, false) => go(Mode::F64),
         (false, false, false, false,  true, false) => go(Mode::I64),
         (false, false, false, false, false,  true) => go(Mode::U64),
-        _ => Ok(())
+        _ => Err(String::from("more than one flag selected!").into())
     };
     match ret {
         Ok(_) => println!("done!"),
