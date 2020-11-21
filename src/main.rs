@@ -239,8 +239,7 @@ fn main() {
         _ => Ok(())
     };
     match ret {
-        Ok(_) => (),
-        Err(_) => ()
+        Ok(_) => println!("Done!"),
+        Err(e) => println!("{}",e)
     }
-    println!("Done!");
 }
