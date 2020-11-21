@@ -30,7 +30,14 @@ impl<'de> Deserialize<'de> for F {
 }
 
 fn gen<T : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
-    (input: &str, desired_len: usize, output: &str, chunking: usize, chunk_delta: f64, num_files: u64, header: bool, order: usize) -> Result<(), Box<dyn Error>> {
+    ( input: &str
+    , desired_len: usize
+    , output: &str
+    , chunking: usize
+    , chunk_delta: f64
+    , num_files: u64
+    , header: bool
+    , order: usize) -> Result<(), Box<dyn Error>> {
     println!("reading history");
     let mut acc = vec![];
     let f = fs::read_to_string(input)?;
