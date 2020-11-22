@@ -1,6 +1,8 @@
 # marky, the CSV file MCMC trainer
 
-## [Preview of output generated from BTCUSD](https://sheganinans.github.io/marky/)
+Generate random walks easier than ever!
+
+## [500,000 minutes of generated BTCUSD price action](https://sheganinans.github.io/marky/)
 
 ```sh
 cargo build --release
