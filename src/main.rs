@@ -36,17 +36,18 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     , chunking: usize
     , chunk_delta: f64
     , num_files: u64
+    , silent: bool
     , header: bool
     , order: usize
     ) -> Result<(), Box<dyn Error>> {
 
-    println!("reading history");
+    if !silent { println!("reading history") }
     let mut acc = vec![];
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
     let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
     for result in rdr.deserialize() { let row: Row = result?; acc.push(row) }
-    println!("training MCMC");
+    if !silent { println!("training MCMC") }
     let mut chain = Chain::of_order(order);
     let history_len = acc.iter().count();
     let mut chunk_size = history_len / chunking;
@@ -54,7 +55,7 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
         chunk_size = (chunk_size as f64 * chunk_delta) as usize;
         for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); }
     }
-    println!("generating files");
+    if !silent { println!("generating files") }
     let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
         let mut wtr =
             csv::WriterBuilder::new()
@@ -79,7 +80,7 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
 
 fn main() {
     let matches = clap_app!(marky =>
-        (version: "0.0.4")
+        (version: "0.0.5")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
         (about: "marky, the CSV Time Series MCMC trainer")
         (@arg DESIRED_LEN: +required "desired length of history")
@@ -88,6 +89,7 @@ fn main() {
         (@arg CHUNKING: -c --chunking +takes_value "chunking factor (default 10)")
         (@arg CHUNK_DELTA: -t --delta +takes_value "chunking delta (default φ)")
         (@arg NUM_FILES: -n --num +takes_value "generate n mumber of files named `n.out.csv`")
+        (@arg SILENT: -s --silent "make me shut up")
         (@arg HEADER: --header "has header (default false)")
         (@arg ORDER: -d ... "increase order of MCMC")
         (@arg HL2: --hl2 "HL2 mode")
@@ -104,6 +106,7 @@ fn main() {
     let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
     let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
     let num_files : u64 = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
+    let silent = matches.is_present("SILENT");
     let header = matches.is_present("HEADER");
     let order = matches.occurrences_of("ORDER") as usize;
     let hl2_mode = matches.is_present("HL2");
@@ -123,7 +126,7 @@ fn main() {
             Mode::F64   => gen::<Vec<F>>,
             Mode::I64   => gen::<Vec<i64>>,
             Mode::U64   => gen::<Vec<u64>>,
-        })(input, desired_len, output, chunking, chunk_delta, num_files, header, order)
+        })(input, desired_len, output, chunking, chunk_delta, num_files, silent, header, order)
     };
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, f64_mode, i64_mode, u64_mode) {
         (false, false, false, false, false, false) => go(Mode::F64),

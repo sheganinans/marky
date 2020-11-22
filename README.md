@@ -10,8 +10,8 @@ cargo build --release
 ```
 
 ```
- .\target\release\marky.exe --help
-marky 0.0.4
+./target/release/marky -h
+marky 0.0.5
 Aistis Raulinaitis. <sheganians@gmail.com>
 marky, the CSV Time Series MCMC trainer
 
@@ -26,6 +26,7 @@ FLAGS:
         --ohlc       OHLC mode
         --ohlcv      OHLCV mode
     -d               increase order of MCMC
+    -s, --silent     make me shut up
         --u64        u64 mode
     -h, --help       Prints help information
     -V, --version    Prints version information
