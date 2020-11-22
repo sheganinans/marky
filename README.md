@@ -1,4 +1,4 @@
-# Marky, the CSV file MCMC trainer
+# Marky, the CSV file Time Series MCMC trainer
 
 ## [Preview of output generated from BTCUSD](https://sheganinans.github.io/marky/)
 
