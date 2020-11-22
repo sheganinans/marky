@@ -1,4 +1,4 @@
-# Marky, the CSV file MCMC trainer
+# marky, the CSV file MCMC trainer
 
 ## [Preview of output generated from BTCUSD](https://sheganinans.github.io/marky/)
 
@@ -11,7 +11,7 @@ cargo build --release
  .\target\release\marky.exe --help
 marky 0.0.4
 Aistis Raulinaitis. <sheganians@gmail.com>
-MCMC CSV Learner
+marky, the CSV Time Series MCMC trainer
 
 USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>

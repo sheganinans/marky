@@ -8,8 +8,8 @@ use markov::Chain;
 use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwned};
 use rayon::prelude::*;
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct HL2 { p: F, v: u64 }
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct OHLC { o: F, h: F, l: F, c: F }
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct   HL2 {                   p: F, v: u64 }
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct  OHLC { o: F, h: F, l: F, c: F }
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct OHLCV { o: F, h: F, l: F, c: F, v: u64 }
 
 #[derive(Debug, Clone, Copy)] struct F(ordered_float::OrderedFloat<f64>);
@@ -81,7 +81,7 @@ fn main() {
     let matches = clap_app!(marky =>
         (version: "0.0.4")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
-        (about: "MCMC CSV Learner")
+        (about: "marky, the CSV Time Series MCMC trainer")
         (@arg DESIRED_LEN: +required "desired length of history")
         (@arg INPUT: +required "input file")
         (@arg OUTPUT: -o --output +takes_value "output destination")
@@ -133,7 +133,7 @@ fn main() {
         (false, false, false,  true, false, false) => go(Mode::F64),
         (false, false, false, false,  true, false) => go(Mode::I64),
         (false, false, false, false, false,  true) => go(Mode::U64),
-        _ => Err(String::from("more than one flag selected!").into())
+        _ => Err(String::from("more than one modes selected!").into())
     };
     match ret {
         Ok(_) => println!("done!"),
