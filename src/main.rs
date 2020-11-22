@@ -50,7 +50,7 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     let mut chain = Chain::of_order(order);
     let history_len = acc.iter().count();
     let mut chunk_size = history_len / chunking;
-    while chunk_size < history_len {
+    while chunk_size <= history_len {
         chunk_size = (chunk_size as f64 * chunk_delta) as usize;
         for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); }
     }
@@ -60,8 +60,8 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
             csv::WriterBuilder::new()
                 .has_headers(false)
                 .from_path(match i {
-                Some(i) => format!("{}.{}", i, output),
-                _ => output.to_string() })?;
+                    Some(i) => format!("{}.{}", i, output),
+                    _ => output.to_string() })?;
         let mut count = 0usize;
         let mut last_elem = chain.generate().iter().next().unwrap().clone();
         while count < desired_len {
