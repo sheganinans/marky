@@ -82,7 +82,7 @@ fn main() {
     let matches = clap_app!(marky =>
         (version: "0.0.5")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
-        (about: "marky, the CSV Time Series MCMC trainer")
+        (about: "marky, the CSV time series MCMC trainer")
         (@arg DESIRED_LEN: +required "desired length of history")
         (@arg INPUT: +required "input file")
         (@arg OUTPUT: -o --output +takes_value "output destination")

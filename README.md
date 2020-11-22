@@ -1,4 +1,4 @@
-# marky, the CSV Time Series MCMC trainer
+# marky, the CSV time series MCMC trainer
 
 Generate random walks easier than ever!
 
@@ -13,7 +13,7 @@ cargo build --release
 ./target/release/marky -h
 marky 0.0.5
 Aistis Raulinaitis. <sheganians@gmail.com>
-marky, the CSV Time Series MCMC trainer
+marky, the CSV time series MCMC trainer
 
 USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>
