@@ -1,4 +1,4 @@
-# marky, the CSV file MCMC trainer
+# marky, the CSV Time Series MCMC trainer
 
 Generate random walks easier than ever!
 
