@@ -11,7 +11,7 @@ cargo build --release
 
 ```
 ./target/release/marky -h
-marky 0.0.5
+marky 0.0.6
 Aistis Raulinaitis. <sheganians@gmail.com>
 marky, the CSV time series MCMC trainer
 
@@ -23,7 +23,6 @@ FLAGS:
         --header     has header (default false)
         --hl2        HL2 mode
         --i64        i64 mode
-        --ohlc       OHLC mode
         --ohlcv      OHLCV mode
     -d               increase order of MCMC
     -s, --silent     make me shut up
@@ -34,6 +33,7 @@ FLAGS:
 OPTIONS:
     -c, --chunking <CHUNKING>    chunking factor (default 10)
     -t, --delta <CHUNK_DELTA>    chunking delta (default φ)
+    -r, --divisor <DIVISOR>      set `max(len(chunks)) < len(rows)/divisor` (useful for large files)
     -n, --num <NUM_FILES>        generate n mumber of files named `n.out.csv`
     -o, --output <OUTPUT>        output destination
 
