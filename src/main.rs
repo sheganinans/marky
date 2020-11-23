@@ -6,7 +6,6 @@ use std::hash::{Hash, Hasher};
 
 use markov::Chain;
 use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwned};
-use rayon::prelude::*;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct   HL2 {                   p: F, v: u64 }
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct  OHLC { o: F, h: F, l: F, c: F }
@@ -47,19 +46,21 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     let history_len = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes()).deserialize::<Row>().count();
     let mut chunk_size = history_len / chunking;
     let mut chain = Chain::<Row>::of_order(order);
-    let mut skip_n = 0;
     if !silent { println!("training MCMC") }
     while chunk_size <= history_len {
-        let mut acc = vec![];
-        let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
-        for result in rdr.deserialize::<Row>().skip(skip_n).take(chunk_size) {
+        let mut skip_n = 0;
+        while skip_n < history_len {
+            let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
+            let results = rdr.deserialize::<Row>().skip(skip_n).take(chunk_size);
+            let mut acc = vec![];
+            for result in results {
+                let row = result?;
+                acc.push(row)
+            }
+            if acc.iter().count() > 0 { chain.feed(acc); }
             skip_n += chunk_size;
-            let row = result?;
-            acc.push(row)
+            chunk_size = (chunk_size as f64 * chunk_delta) as usize;
         }
-        skip_n = 0;
-        chain.feed(acc);
-        chunk_size = (chunk_size as f64 * chunk_delta) as usize;
     }
     if !silent { println!("generating files") }
     let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
@@ -80,7 +81,7 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
         wtr.flush()?;
         Ok(())
     };
-    (1..num_files+1).into_par_iter().for_each(|i| { gen(if num_files > 1 { Some(i) } else { None }).unwrap() });
+    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })? }
     Ok(())
 }
 

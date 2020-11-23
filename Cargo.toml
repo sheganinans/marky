@@ -12,4 +12,3 @@ serde = { version = "1", features = ["derive"] }
 csv = "1.1"
 clap = "2.33.3"
 ordered-float = "2.0.0"
-rayon = "1.5.0"
