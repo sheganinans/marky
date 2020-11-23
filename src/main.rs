@@ -42,18 +42,24 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     ) -> Result<(), Box<dyn Error>> {
 
     if !silent { println!("reading history") }
-    let mut acc = vec![];
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
-    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
-    for result in rdr.deserialize() { let row: Row = result?; acc.push(row) }
-    if !silent { println!("training MCMC") }
-    let mut chain = Chain::of_order(order);
-    let history_len = acc.iter().count();
+    let history_len = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes()).deserialize::<Row>().count();
     let mut chunk_size = history_len / chunking;
+    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
+    let mut chain = Chain::<Row>::of_order(order);
+    let mut skip_n = 0;
+    if !silent { println!("training MCMC") }
     while chunk_size <= history_len {
+        let mut acc = vec![];
+        for result in rdr.deserialize::<Row>().skip(skip_n).take(chunk_size) {
+            skip_n += chunk_size;
+            let row = result?;
+            acc.push(row)
+        }
+        skip_n = 0;
+        chain.feed(acc);
         chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-        for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); }
     }
     if !silent { println!("generating files") }
     let gen = |i:Option<u64>| -> Result<(), Box<dyn Error>> {
