@@ -13,23 +13,6 @@ use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwn
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct  OHLC { o: F, h: F, l: F, c: F }
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)] struct OHLCV { o: F, h: F, l: F, c: F, v: u64 }
 
-#[derive(Debug, Clone, Copy)] struct F(ordered_float::OrderedFloat<f64>);
-
-impl Hash for F { fn hash<H: Hasher>(&self, state: &mut H) { self.0.hash(state) } }
-
-impl PartialEq for F { fn eq(&self, other: &Self) -> bool { self.0 == other.0 } }
-
-impl Eq for F {}
-
-impl Serialize for F { fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer { serializer.serialize_f64(*self.0) } }
-
-impl<'de> Deserialize<'de> for F {
-    fn deserialize<D>(deserializer: D) -> Result<F, D::Error> where D: Deserializer<'de> {
-        let f = f64::deserialize(deserializer)?;
-        Ok(F(ordered_float::OrderedFloat(f)))
-    }
-}
-
 fn main() {
     let matches = clap_app!(marky =>
         (version: "0.0.6")
@@ -187,4 +170,21 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     let duration = start.elapsed();
     if !silent { println!("time elapsed writing files: {:?}", duration); }
     Ok(())
+}
+
+#[derive(Debug, Clone, Copy)] struct F(ordered_float::OrderedFloat<f64>);
+
+impl Hash for F { fn hash<H: Hasher>(&self, state: &mut H) { self.0.hash(state) } }
+
+impl PartialEq for F { fn eq(&self, other: &Self) -> bool { self.0 == other.0 } }
+
+impl Eq for F {}
+
+impl Serialize for F { fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer { serializer.serialize_f64(*self.0) } }
+
+impl<'de> Deserialize<'de> for F {
+    fn deserialize<D>(deserializer: D) -> Result<F, D::Error> where D: Deserializer<'de> {
+        let f = f64::deserialize(deserializer)?;
+        Ok(F(ordered_float::OrderedFloat(f)))
+    }
 }
