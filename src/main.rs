@@ -147,7 +147,7 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
                     Some(i) => format!("{}.{}", i, output),
                     _ => { output.to_string() }})?;
         let mut count = 0usize;
-        let mut last_elem = chain.generate().iter().next().unwrap().clone();
+        let mut last_elem = chain.generate().iter().last().unwrap().clone();
         while count < desired_len {
             let data = chain.generate_from_token(last_elem);
             last_elem = data.iter().rev().next().unwrap().clone();
