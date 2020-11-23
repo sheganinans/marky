@@ -81,7 +81,7 @@ fn main() {
     }
 }
 
-fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
+fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     ( input: &str
     , desired_len: usize
     , output: &str
