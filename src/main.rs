@@ -117,7 +117,9 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     let duration = start.elapsed();
     if !silent {
         println!("time elapsed reading history: {:?}", duration);
-        println!("training MCMC:\n\t   len(history): {}\n\tmax(len(chunk)): {}", history_len, history_len / divisor)
+        println!("training MCMC:\n\t   len(history): {}", history_len);
+        println!("\tmax(len(chunk)): {}", history_len / divisor);
+        println!("\tmin(len(chunk)): {}", history_len / chunking);
     }
     let start = Instant::now();
     while chunk_size <= history_len / divisor {
