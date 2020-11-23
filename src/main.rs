@@ -87,14 +87,18 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     }
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
+    let pb = ProgressBar::new(num_files as u64);
     let gen = |i:Option<usize>| -> Result<(), Box<dyn Error>> {
         if !silent { println!("") }
         let mut wtr =
             csv::WriterBuilder::new()
                 .has_headers(false)
                 .from_path(match i {
-                    Some(i) => format!("{}.{}", i, output),
-                    _ => output.to_string() })?;
+                    Some(i) => {
+                        if !silent { pb.inc(1); };
+                        format!("{}.{}", i, output)
+                    },
+                    _ => { output.to_string() }})?;
         let mut count = 0usize;
         let mut last_elem = chain.generate().iter().next().unwrap().clone();
         let pb = ProgressBar::new(desired_len as u64);
@@ -104,15 +108,14 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
             let len = data.iter().count();
             count += len;
             for row in data.into_iter() { wtr.serialize(row)? }
-            if !silent { pb.inc(len as u64) }
+            if !silent { match i { Some(_) => pb.inc(len as u64), _ => () } }
         }
         wtr.flush()?;
         Ok(())
     };
     let start = Instant::now();
     if !silent { println!("generating files") }
-    let pb = ProgressBar::new(num_files as u64);
-    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })?; if !silent { pb.inc(1); } }
+    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })?;  }
     let duration = start.elapsed();
     if !silent { println!("time elapsed writing files: {:?}", duration); }
     Ok(())
