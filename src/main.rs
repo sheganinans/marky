@@ -3,7 +3,9 @@
 use std::error::Error;
 use std::fs;
 use std::hash::{Hash, Hasher};
+use std::time::Instant;
 
+use indicatif::ProgressBar;
 use markov::Chain;
 use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwned};
 
@@ -42,21 +44,51 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     ) -> Result<(), Box<dyn Error>> {
 
     if !silent { println!("reading history") }
-    let mut acc = vec![];
+    let start = Instant::now();
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
-    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
-    for result in rdr.deserialize() { let row: Row = result?; acc.push(row) }
-    if !silent { println!("training MCMC") }
-    let mut chain = Chain::of_order(order);
-    let history_len = acc.iter().count();
+    let history_len = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes()).deserialize::<Row>().count();
     let mut chunk_size = history_len / chunking;
-    while chunk_size <= history_len / divisor {
-        chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-        for d in acc[..].chunks(chunk_size as usize) { chain.feed(d); }
+    let mut chain = Chain::<Row>::of_order(order);
+    let pb = ProgressBar::new({
+        let mut acc = 0;
+        let mut chunk_size = chunk_size;
+        while chunk_size <= history_len / divisor {
+            let mut skip_n = 0;
+            while skip_n < history_len {
+                acc += chunk_size;
+                skip_n += chunk_size;
+                chunk_size = (chunk_size as f64 * chunk_delta) as usize;
+            }
+        }
+        acc as u64
+    });
+    let duration = start.elapsed();
+    if !silent {
+        println!("time elapsed reading history: {:?}", duration);
+        println!("training MCMC:\n\t   len(history): {}\n\tmax(len(chunk)): {}", history_len, chunk_size / divisor)
     }
-    if !silent { println!("generating files") }
+    let start = Instant::now();
+    while chunk_size <= history_len / divisor {
+        let mut skip_n = 0;
+        while skip_n < history_len {
+            let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
+            let results = rdr.deserialize::<Row>().skip(skip_n).take(chunk_size);
+            let mut acc = vec![];
+            for result in results {
+                let row = result?;
+                acc.push(row)
+            }
+            if acc.iter().count() > 0 { chain.feed(acc); }
+            if !silent { pb.inc(chunk_size as u64) }
+            skip_n += chunk_size;
+            chunk_size = (chunk_size as f64 * chunk_delta) as usize;
+        }
+    }
+    let duration = start.elapsed();
+    if !silent { println!("time elasped training MCMC: {:?}", duration); }
     let gen = |i:Option<usize>| -> Result<(), Box<dyn Error>> {
+        if !silent { println!("") }
         let mut wtr =
             csv::WriterBuilder::new()
                 .has_headers(false)
@@ -65,16 +97,24 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
                     _ => output.to_string() })?;
         let mut count = 0usize;
         let mut last_elem = chain.generate().iter().next().unwrap().clone();
+        let pb = ProgressBar::new(desired_len as u64);
         while count < desired_len {
             let data = chain.generate_from_token(last_elem);
             last_elem = data.iter().rev().next().unwrap().clone();
-            count += data.iter().count();
+            let len = data.iter().count();
+            count += len;
             for row in data.into_iter() { wtr.serialize(row)? }
+            if !silent { pb.inc(len as u64) }
         }
         wtr.flush()?;
         Ok(())
     };
-    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })? }
+    let start = Instant::now();
+    if !silent { println!("generating files") }
+    let pb = ProgressBar::new(num_files as u64);
+    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })?; if !silent { pb.inc(1); } }
+    let duration = start.elapsed();
+    if !silent { println!("time elapsed writing files: {:?}", duration); }
     Ok(())
 }
 
@@ -141,7 +181,7 @@ fn main() {
         _ => Err(String::from("more than one modes selected!").into())
     };
     match ret {
-        Ok(_) => println!("done!"),
-        Err(e) => println!("{}",e)
+        Ok(_) => if !silent { println!("done!") },
+        Err(e) => println!("{}", e)
     }
 }
