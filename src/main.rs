@@ -150,7 +150,7 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
         let mut last_elem = chain.generate().iter().last().unwrap().clone();
         while count < desired_len {
             let data = chain.generate_from_token(last_elem);
-            last_elem = data.iter().rev().next().unwrap().clone();
+            last_elem = data.iter().last().unwrap().clone();
             let len = data.iter().count();
             count += len;
             for row in data.into_iter() { wtr.serialize(row)? }
