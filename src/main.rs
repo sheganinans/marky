@@ -98,7 +98,7 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     let start = Instant::now();
     let f = fs::read_to_string(input)?;
     let order = if order == 0usize { 1usize } else { order };
-    let history_len = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes()).deserialize::<Row>().count();
+    let history_len = f.lines().count();
     let mut chunk_size = history_len / chunking;
     let mut chain = Chain::<Row>::of_order(order);
     let pb = ProgressBar::new({
@@ -138,35 +138,34 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     }
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
-    let pb = ProgressBar::new(num_files as u64);
-    let gen = |i:Option<usize>| -> Result<(), Box<dyn Error>> {
+    let gen = |i: Option<usize>| -> Result<(), Box<dyn Error>> {
         if !silent { println!("") }
         let mut wtr =
             csv::WriterBuilder::new()
                 .has_headers(false)
                 .from_path(match i {
-                    Some(i) => {
-                        if !silent { pb.inc(1); };
-                        format!("{}.{}", i, output)
-                    },
+                    Some(i) => format!("{}.{}", i, output),
                     _ => { output.to_string() }})?;
         let mut count = 0usize;
         let mut last_elem = chain.generate().iter().next().unwrap().clone();
-        let pb = ProgressBar::new(desired_len as u64);
         while count < desired_len {
             let data = chain.generate_from_token(last_elem);
             last_elem = data.iter().rev().next().unwrap().clone();
             let len = data.iter().count();
             count += len;
             for row in data.into_iter() { wtr.serialize(row)? }
-            if !silent { match i { Some(_) => pb.inc(len as u64), _ => () } }
         }
         wtr.flush()?;
         Ok(())
     };
     let start = Instant::now();
     if !silent { println!("generating files") }
-    for i in 1 .. num_files+1 { gen(if num_files > 1 { Some(i) } else { None })?;  }
+    let pb = ProgressBar::new(num_files as u64);
+    for i in 1 .. num_files + 1 {
+        let multiple = num_files > 1;
+        gen(if multiple { Some(i) } else { None })?;
+        if !silent { if multiple { pb.inc(1) } }
+    }
     let duration = start.elapsed();
     if !silent { println!("time elapsed writing files: {:?}", duration); }
     Ok(())
