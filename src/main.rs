@@ -46,12 +46,12 @@ fn gen<Row : Eq + Hash + Clone + Sync + Serialize + DeserializeOwned>
     let order = if order == 0usize { 1usize } else { order };
     let history_len = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes()).deserialize::<Row>().count();
     let mut chunk_size = history_len / chunking;
-    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
     let mut chain = Chain::<Row>::of_order(order);
     let mut skip_n = 0;
     if !silent { println!("training MCMC") }
     while chunk_size <= history_len {
         let mut acc = vec![];
+        let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
         for result in rdr.deserialize::<Row>().skip(skip_n).take(chunk_size) {
             skip_n += chunk_size;
             let row = result?;
