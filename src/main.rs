@@ -43,10 +43,10 @@ fn main() {
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
     let order = matches.value_of("ORDER").unwrap_or("1").parse().unwrap();
     let num_files = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
-    let init_chunk_size : usize = matches.value_of("CHUNK_SIZE").unwrap_or("100").parse().unwrap();
-    let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
-    let divisor : usize = matches.value_of("DIVISOR").unwrap_or("1").parse().unwrap();
-    let init_val : String = matches.value_of("INIT_VAL").unwrap_or("").parse().unwrap();
+    let init_chunk_size = matches.value_of("CHUNK_SIZE").unwrap_or("100").parse().unwrap();
+    let chunk_delta = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
+    let divisor = matches.value_of("DIVISOR").unwrap_or("1").parse().unwrap();
+    let init_val = matches.value_of("INIT_VAL").unwrap_or("").parse().unwrap();
     let silent = matches.is_present("SILENT");
     let header = matches.is_present("HEADER");
     let hl2_mode = matches.is_present("HL2");
