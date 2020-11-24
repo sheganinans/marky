@@ -130,7 +130,6 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
         pb.inc(1);
         chunk_size = (chunk_size as f64 * chunk_delta) as usize;
     }
-
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
     let gen = |i: Option<usize>| -> Result<(), Box<dyn Error>> {
