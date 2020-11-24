@@ -1,6 +1,6 @@
 #[macro_use] extern crate clap;
 
-use std::error::Error;
+use std::{error::Error};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::time::Instant;
@@ -16,16 +16,19 @@ use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwn
 
 fn main() {
     let matches = clap_app!(marky =>
-        (version: "0.0.7")
+        (version: "0.0.8")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
         (about: "marky, the CSV time series MCMC trainer")
         (@arg DESIRED_LEN: +required "desired length of output file")
         (@arg INPUT: +required "input file")
         (@arg OUTPUT: -o --output +takes_value "output destination")
+        (@arg ORDER: -r --order +takes_value "increase order of MCMC")
         (@arg NUM_FILES: -n --num +takes_value "generate n mumber of files named `n.out.csv`")
+        (@arg CHUNK_SIZE: -c --chunk +takes_value "initial chunk size (default 100)")
+        (@arg CHUNK_DELTA: -d --delta +takes_value "chunking delta (default φ)")
+        (@arg DIVISOR: -v --divisor +takes_value "`max(len(chunk)) < len(history)/divisor` (default 1)")
         (@arg SILENT: -s --silent "make me shut up")
         (@arg HEADER: --header "has header (default false)")
-        (@arg ORDER: -d ... "increase order of MCMC")
         (@arg HL2: --hl2 "HL2 mode")
         (@arg OHLC: --ohlc "OHLC mode")
         (@arg OHLCV: --ohlcv "OHLCV mode")
@@ -37,10 +40,13 @@ fn main() {
     let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap();
     let input = matches.value_of("INPUT").unwrap();
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
+    let order = matches.value_of("ORDER").unwrap_or("1").parse().unwrap();
     let num_files = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
+    let init_chunk_size : usize = matches.value_of("CHUNK_SIZE").unwrap_or("100").parse().unwrap();
+    let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
+    let divisor : usize = matches.value_of("DIVISOR").unwrap_or("1").parse().unwrap();
     let silent = matches.is_present("SILENT");
     let header = matches.is_present("HEADER");
-    let order = matches.occurrences_of("ORDER") as usize;
     let hl2_mode = matches.is_present("HL2");
     let ohlc_mode = matches.is_present("OHLC");
     let ohlcv_mode = matches.is_present("OHLCV");
@@ -58,7 +64,7 @@ fn main() {
             Mode::F64   => gen::<Vec<F>>,
             Mode::I64   => gen::<Vec<i64>>,
             Mode::U64   => gen::<Vec<u64>>,
-        })(desired_len, input, output, num_files, silent, header, order)
+        })(desired_len, input, output, num_files, init_chunk_size, chunk_delta, divisor, silent, header, order)
     };
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, f64_mode, i64_mode, u64_mode) {
         (false, false, false, false, false, false) => go(Mode::F64),
@@ -81,6 +87,9 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     , input: &str
     , output: &str
     , num_files: usize
+    , init_chunk_size: usize
+    , chunk_delta: f64
+    , divisor: usize
     , silent: bool
     , header: bool
     , order: usize
@@ -88,19 +97,40 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
 
     let order = if order == 0usize { 1usize } else { order };
     let mut chain = Chain::<Row>::of_order(order);
-    if !silent { println!("reading history") }
     let start = Instant::now();
-    let pb = ProgressBar::new({ let file = File::open(input)?; count_lines(file)? as u64 });
-    let file = File::open(input)?;
-    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
-    if !silent { println!("training MCMC") }
-    let mut last_elem = rdr.deserialize().next().unwrap()?;
-    for result in rdr.deserialize::<Row>() {
-        let row = result?;
-        chain.feed(vec![last_elem, row.clone()]);
-        last_elem = row;
-        pb.inc(1)
+    let history_len = { let file = File::open(input)?; count_lines(file)? };
+    let training_len = {
+        let mut acc = 0;
+        let mut chunk_size = init_chunk_size;
+        while chunk_size < history_len / divisor {
+            acc += 1;
+            chunk_size = (chunk_size as f64 * chunk_delta) as usize;
+        }
+        acc
+    };
+    let pb = ProgressBar::new(training_len as u64);
+    if !silent {
+        println!("training MCMC\n\t   len(history): {}", history_len);
+        println!("\tmax(len(chunk)): {}", history_len / divisor);
+        println!("\tmin(len(chunk)): {}", init_chunk_size);
     }
+    let mut chunk_size = init_chunk_size;
+    while chunk_size < history_len / divisor {
+        let file = File::open(input)?;
+        let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
+        loop {
+            let mut acc = vec![];
+            for result in rdr.deserialize::<Row>().take(chunk_size) {
+                let row = result?;
+                acc.push(row)
+            }
+            if acc.iter().count() == 0 { break; }
+            chain.feed(&acc);
+        }
+        pb.inc(1);
+        chunk_size = (chunk_size as f64 * chunk_delta) as usize;
+    }
+
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
     let gen = |i: Option<usize>| -> Result<(), Box<dyn Error>> {
@@ -114,10 +144,9 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
         let mut count = 0;
         while count < desired_len {
             let data = chain.generate_from_token(last_elem.clone());
-            let data_iter = data.iter().skip(1);
-            for row in data_iter.clone() { wtr.serialize(row)? }
-            count = count + data_iter.count();
-            last_elem = data.last().unwrap().to_owned();
+            for row in data.iter() { wtr.serialize(row)? }
+            count = count + data.iter().count();
+            last_elem = data.into_iter().last().unwrap();
         }
         wtr.flush()?;
         Ok(())
