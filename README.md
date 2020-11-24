@@ -6,15 +6,11 @@ Generate random walks easier than ever!
 
 ```
 $ cargo build --release
-$ ./target/release/marky 500000 BTC.csv -c 1000
+$ ./target/release/marky 500000 BTC.csv
 reading history
-time elapsed reading history: 66.8794ms
-training MCMC:
-           len(history): 1343664
-        max(len(chunk)): 1343664
-        min(len(chunk)): 1343
-██████████████████████████████████████████████████████████████████████████████████ 4791082/4791082
-time elasped training MCMC: 7.5264929s
+training MCMC
+██████████████████████████████████████████████████████████████████████████████████ 1343542/1343664
+time elasped training MCMC: 109.139263s
 generating files
 
 done!
@@ -22,7 +18,7 @@ done!
 
 ```
 ./target/release/marky -h
-marky 0.0.6
+marky 0.0.7
 Aistis Raulinaitis. <sheganians@gmail.com>
 marky, the CSV time series MCMC trainer
 
@@ -34,6 +30,7 @@ FLAGS:
         --header     has header (default false)
         --hl2        HL2 mode
         --i64        i64 mode
+        --ohlc       OHLC mode
         --ohlcv      OHLCV mode
     -d               increase order of MCMC
     -s, --silent     make me shut up
@@ -42,14 +39,11 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --chunking <CHUNKING>    chunking factor (default 10)
-    -t, --delta <CHUNK_DELTA>    chunking delta (default φ)
-    -r, --divisor <DIVISOR>      set `max(len(chunks)) < len(rows)/divisor` (useful for large files)
-    -n, --num <NUM_FILES>        generate n mumber of files named `n.out.csv`
-    -o, --output <OUTPUT>        output destination
+    -n, --num <NUM_FILES>    generate n mumber of files named `n.out.csv`
+    -o, --output <OUTPUT>    output destination
 
 ARGS:
-    <DESIRED_LEN>    desired length of history
+    <DESIRED_LEN>    desired length of output file
     <INPUT>          input file
 ```
 

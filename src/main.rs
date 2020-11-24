@@ -16,16 +16,13 @@ use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwn
 
 fn main() {
     let matches = clap_app!(marky =>
-        (version: "0.0.6")
+        (version: "0.0.7")
         (author: "Aistis Raulinaitis. <sheganians@gmail.com>")
         (about: "marky, the CSV time series MCMC trainer")
-        (@arg DESIRED_LEN: +required "desired length of history")
+        (@arg DESIRED_LEN: +required "desired length of output file")
         (@arg INPUT: +required "input file")
         (@arg OUTPUT: -o --output +takes_value "output destination")
-        (@arg CHUNKING: -c --chunking +takes_value "chunking factor (default 10)")
-        (@arg CHUNK_DELTA: -t --delta +takes_value "chunking delta (default φ)")
         (@arg NUM_FILES: -n --num +takes_value "generate n mumber of files named `n.out.csv`")
-        (@arg DIVISOR: -r --divisor +takes_value "set `max(len(chunks)) < len(history)/divisor` (useful for large files)")
         (@arg SILENT: -s --silent "make me shut up")
         (@arg HEADER: --header "has header (default false)")
         (@arg ORDER: -d ... "increase order of MCMC")
@@ -37,13 +34,10 @@ fn main() {
         (@arg U64: --u64 "u64 mode")
     ).get_matches();
 
-    let input = matches.value_of("INPUT").unwrap();
     let desired_len = matches.value_of("DESIRED_LEN").unwrap().parse().unwrap();
+    let input = matches.value_of("INPUT").unwrap();
     let output = matches.value_of("OUTPUT").unwrap_or("out.csv");
-    let chunking = matches.value_of("CHUNKING").unwrap_or("10").parse().unwrap();
-    let chunk_delta : f64 = matches.value_of("CHUNK_DELTA").unwrap_or("1.618033988749894848204586834").parse().unwrap();
     let num_files = matches.value_of("NUM_FILES").unwrap_or("1").parse().unwrap();
-    let divisor = matches.value_of("DIVISOR").unwrap_or("1").parse().unwrap();
     let silent = matches.is_present("SILENT");
     let header = matches.is_present("HEADER");
     let order = matches.occurrences_of("ORDER") as usize;
@@ -64,7 +58,7 @@ fn main() {
             Mode::F64   => gen::<Vec<F>>,
             Mode::I64   => gen::<Vec<i64>>,
             Mode::U64   => gen::<Vec<u64>>,
-        })(input, desired_len, output, chunking, chunk_delta, num_files, divisor, silent, header, order)
+        })(desired_len, input, output, num_files, silent, header, order)
     };
     let ret = match (hl2_mode, ohlc_mode, ohlcv_mode, f64_mode, i64_mode, u64_mode) {
         (false, false, false, false, false, false) => go(Mode::F64),
@@ -83,63 +77,29 @@ fn main() {
 }
 
 fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
-    ( input: &str
-    , desired_len: usize
+    ( desired_len: usize
+    , input: &str
     , output: &str
-    , chunking: usize
-    , chunk_delta: f64
     , num_files: usize
-    , divisor: usize
     , silent: bool
     , header: bool
     , order: usize
     ) -> Result<(), Box<dyn Error>> {
 
+    let order = if order == 0usize { 1usize } else { order };
+    let mut chain = Chain::<Row>::of_order(order);
     if !silent { println!("reading history") }
     let start = Instant::now();
-    let history_len = {
-        let file = File::open(input)?;
-        count_lines(file)?
-    };
-    let order = if order == 0usize { 1usize } else { order };
-    let mut chunk_size = history_len / chunking;
-    let mut chain = Chain::<Row>::of_order(order);
-    let pb = ProgressBar::new({
-        let mut acc = 0;
-        let mut chunk_size = chunk_size;
-        while chunk_size <= history_len / divisor {
-            let mut skip_n = 0;
-            while skip_n < history_len {
-                acc += chunk_size;
-                skip_n += chunk_size;
-                chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-            }
-        }
-        acc as u64
-    });
-    let duration = start.elapsed();
-    if !silent {
-        println!("time elapsed reading history: {:?}", duration);
-        println!("training MCMC:\n\t   len(history): {}", history_len);
-        println!("\tmax(len(chunk)): {}", history_len / divisor);
-        println!("\tmin(len(chunk)): {}", history_len / chunking);
-    }
-    let start = Instant::now();
-    while chunk_size <= history_len / divisor {
-        let mut skip_n = 0;
-        while skip_n < history_len {
-            let file = File::open(input)?;
-            let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
-            let mut acc = vec![];
-            for result in rdr.deserialize::<Row>().skip(skip_n).take(chunk_size) {
-                let row = result?;
-                acc.push(row)
-            }
-            if acc.iter().count() > 0 { chain.feed(acc); }
-            if !silent { pb.inc(chunk_size as u64) }
-            skip_n += chunk_size;
-            chunk_size = (chunk_size as f64 * chunk_delta) as usize;
-        }
+    let pb = ProgressBar::new({ let file = File::open(input)?; count_lines(file)? as u64 });
+    let file = File::open(input)?;
+    let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
+    if !silent { println!("training MCMC") }
+    let mut last_elem = rdr.deserialize().next().unwrap()?;
+    for result in rdr.deserialize::<Row>() {
+        let row = result?;
+        chain.feed(vec![last_elem, row.clone()]);
+        last_elem = row;
+        pb.inc(1)
     }
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
@@ -151,14 +111,13 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
                 .from_path(match i {
                     Some(i) => format!("{}.{}", i, output),
                     _ => { output.to_string() }})?;
-        let mut count = 0usize;
-        let mut last_elem = chain.generate().iter().last().unwrap().clone();
+        let mut last_elem = chain.generate().into_iter().last().unwrap();
+        let mut count = 0;
         while count < desired_len {
-            let data = chain.generate_from_token(last_elem);
-            last_elem = data.iter().last().unwrap().clone();
-            let len = data.iter().count();
-            count += len;
-            for row in data.into_iter() { wtr.serialize(row)? }
+            let data = chain.generate_from_token(last_elem.clone());
+            for row in data.iter() { wtr.serialize(row)? }
+            count = count + data.iter().count();
+            last_elem = data.into_iter().last().unwrap();
         }
         wtr.flush()?;
         Ok(())
