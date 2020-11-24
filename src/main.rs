@@ -1,6 +1,6 @@
 #[macro_use] extern crate clap;
 
-use std::{error::Error};
+use std::error::Error;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::time::Instant;
@@ -104,7 +104,6 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     let duration = start.elapsed();
     if !silent { println!("time elasped training MCMC: {:?}", duration); }
     let gen = |i: Option<usize>| -> Result<(), Box<dyn Error>> {
-        if !silent { println!("") }
         let mut wtr =
             csv::WriterBuilder::new()
                 .has_headers(false)
