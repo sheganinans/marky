@@ -5,8 +5,8 @@ Generate random walks easier than ever!
 ## [500,000 minutes of generated BTCUSD price action](https://sheganinans.github.io/marky/)
 
 ```
-cargo build --release
-./target/release/marky 500000 BTC.csv -c 1000
+$ cargo build --release
+$ ./target/release/marky 500000 BTC.csv -c 1000
 reading history
 time elapsed reading history: 66.8794ms
 training MCMC:
