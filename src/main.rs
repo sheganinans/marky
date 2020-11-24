@@ -1,11 +1,12 @@
 #[macro_use] extern crate clap;
 
-use std::error::Error;
-use std::fs;
+use std::{error::Error};
+use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::time::Instant;
 
 use indicatif::ProgressBar;
+use linecount::count_lines;
 use markov::Chain;
 use serde::{Deserialize, Serialize, Serializer, Deserializer, de::DeserializeOwned};
 
@@ -24,7 +25,7 @@ fn main() {
         (@arg CHUNKING: -c --chunking +takes_value "chunking factor (default 10)")
         (@arg CHUNK_DELTA: -t --delta +takes_value "chunking delta (default φ)")
         (@arg NUM_FILES: -n --num +takes_value "generate n mumber of files named `n.out.csv`")
-        (@arg DIVISOR: -r --divisor +takes_value "set `max(len(chunks)) < len(rows)/divisor` (useful for large files)")
+        (@arg DIVISOR: -r --divisor +takes_value "set `max(len(chunks)) < len(history)/divisor` (useful for large files)")
         (@arg SILENT: -s --silent "make me shut up")
         (@arg HEADER: --header "has header (default false)")
         (@arg ORDER: -d ... "increase order of MCMC")
@@ -96,9 +97,11 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
 
     if !silent { println!("reading history") }
     let start = Instant::now();
-    let f = fs::read_to_string(input)?;
+    let history_len = {
+        let file = File::open(input)?;
+        count_lines(file)?
+    };
     let order = if order == 0usize { 1usize } else { order };
-    let history_len = f.lines().count();
     let mut chunk_size = history_len / chunking;
     let mut chain = Chain::<Row>::of_order(order);
     let pb = ProgressBar::new({
@@ -125,7 +128,8 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
     while chunk_size <= history_len / divisor {
         let mut skip_n = 0;
         while skip_n < history_len {
-            let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(f.as_bytes());
+            let file = File::open(input)?;
+            let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
             let results = rdr.deserialize::<Row>().skip(skip_n).take(chunk_size);
             let mut acc = vec![];
             for result in results {
