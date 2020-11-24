@@ -19,9 +19,10 @@ done!
 
 ```
 ./target/release/marky -h
-marky 0.0.8
+marky 0.0.9
 Aistis Raulinaitis. <sheganians@gmail.com>
 marky, the CSV time series MCMC trainer
+
 USAGE:
     marky.exe [FLAGS] [OPTIONS] <DESIRED_LEN> <INPUT>
 
@@ -41,6 +42,7 @@ OPTIONS:
     -d, --delta <CHUNK_DELTA>    chunking delta (default φ)
     -c, --chunk <CHUNK_SIZE>     initial chunk size (default 100)
     -v, --divisor <DIVISOR>      `max(len(chunk)) < len(history)/divisor` (default 1)
+    -i, --init <INIT_VAL>        give an initial value to each file's MCMC
     -n, --num <NUM_FILES>        generate n mumber of files named `n.out.csv`
     -r, --order <ORDER>          increase order of MCMC
     -o, --output <OUTPUT>        output destination
