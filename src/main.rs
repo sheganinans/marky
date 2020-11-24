@@ -130,9 +130,8 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
         while skip_n < history_len {
             let file = File::open(input)?;
             let mut rdr = csv::ReaderBuilder::new().has_headers(header).from_reader(file);
-            let results = rdr.deserialize::<Row>().skip(skip_n).take(chunk_size);
             let mut acc = vec![];
-            for result in results {
+            for result in rdr.deserialize::<Row>().skip(skip_n).take(chunk_size) {
                 let row = result?;
                 acc.push(row)
             }
