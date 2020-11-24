@@ -12,7 +12,6 @@ training MCMC
 ██████████████████████████████████████████████████████████████████████████████████ 1343542/1343664
 time elasped training MCMC: 109.139263s
 generating files
-
 done!
 ```
 
