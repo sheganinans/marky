@@ -114,9 +114,10 @@ fn gen<Row : Eq + Hash + Clone + Serialize + DeserializeOwned>
         let mut count = 0;
         while count < desired_len {
             let data = chain.generate_from_token(last_elem.clone());
-            for row in data.iter() { wtr.serialize(row)? }
-            count = count + data.iter().count();
-            last_elem = data.into_iter().last().unwrap();
+            let data_iter = data.iter().skip(1);
+            for row in data_iter.clone() { wtr.serialize(row)? }
+            count = count + data_iter.count();
+            last_elem = data.last().unwrap().to_owned();
         }
         wtr.flush()?;
         Ok(())
